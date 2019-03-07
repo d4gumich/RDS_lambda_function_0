@@ -2,17 +2,20 @@ import sys
 import logging
 import rds_config
 import pymysql
+import json 
+
 #rds settings
 rds_host  = rds_config.rds_host
 name = rds_config.db_username
 password = rds_config.db_password
 db_name = rds_config.db_name
+port = rds_config.port
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 try:
-    conn = pymysql.connect(rds_host, user=name, passwd=password, db=db_name, port=3306, connect_timeout=5)
+    conn = pymysql.connect(rds_host, user=name, passwd=password, db=db_name, port=port, connect_timeout=5)
     print('SUCCESS')
 except:
     logger.error("ERROR: Unexpected error: Could not connect to MySQL instance.")
@@ -27,18 +30,12 @@ def handler(event, context):
 
     item_count = 0
     cur = conn.cursor()
-    # with conn.cursor() as cur:
-    #     cur.execute("create table Employee3 ( EmpID  int NOT NULL, Name varchar(255) NOT NULL, PRIMARY KEY (EmpID))")
-    #     cur.execute('insert into Employee3 (EmpID, Name) values(1, "Joe")')
-    #     cur.execute('insert into Employee3 (EmpID, Name) values(2, "Bob")')
-    #     cur.execute('insert into Employee3 (EmpID, Name) values(3, "Mary")')
-    #     conn.commit()
-    #     cur.execute("select * from Employee3")
-    #     for row in cur:
-    #         item_count += 1
-    #         logger.info(row)
-    # conn.commit()
-
-    cur.execute("SELECT * FROM cio4good WHERE year = 2013")
-    result = cur.fetchall()
-    return result
+    cur.execute("SELECT year, organization_count FROM cio4good WHERE size = 'Group';")
+    row_headers=[x[0] for x in cur.description] #this will extract row headers
+    rv = cur.fetchall()
+    json_data=[]
+    for result in rv:
+        json_data.append(dict(zip(row_headers,result)))
+    return json_data
+    # result = cur.fetchall()
+    # return result
